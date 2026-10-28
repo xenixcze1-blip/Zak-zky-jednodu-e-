@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zakázky jednoduše — MVP</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#697386;--line:#e5e9f2;--brand:#4f46e5;--brand2:#4338ca;--green:#12805c;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--brand);color:#fff;font-weight:650}button:hover{background:var(--brand2)}button.secondary{background:#eef0ff;color:var(--brand)}button.danger{background:#fff0ef;color:var(--red)}button.small{padding:6px 9px;font-size:13px}
+header{background:#fff;border-bottom:1px solid var(--line);padding:15px max(18px,calc((100% - 1180px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:3}
+.brand{font-weight:850;font-size:19px;letter-spacing:-.5px}.brand span{color:var(--brand)}.tag{font-size:12px;color:var(--muted);background:#f0f2f8;padding:5px 8px;border-radius:999px}
+main{max-width:1180px;margin:26px auto;padding:0 18px}.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:22px}.hero h1{font-size:clamp(25px,4vw,34px);line-height:1.1;margin:0 0 8px;letter-spacing:-1px}.hero p{margin:0;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 2px 10px #17203305}.metric-label{font-size:13px;color:var(--muted)}.metric{font-size:27px;font-weight:800;margin-top:5px;letter-spacing:-.8px}.metric-note{font-size:12px;color:var(--muted);margin-top:3px}.layout{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.section-head h2{font-size:18px;margin:0}.muted{color:var(--muted)}.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px}.tabs button{background:#e9ecf5;color:#424b60}.tabs button.active{background:var(--brand);color:white}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.field label{font-size:13px;font-weight:650;color:#414b60}.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid #d8deea;border-radius:9px;background:#fff;color:var(--ink)}.field textarea{min-height:75px;resize:vertical}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.form-grid .full{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}.list{display:flex;flex-direction:column;gap:9px}.item{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.item strong{display:block}.item small{display:block;color:var(--muted);margin-top:3px}.amount{font-weight:800;white-space:nowrap}.status{display:inline-block;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:750;background:#edf8f2;color:var(--green);margin-top:6px}.status.open{background:#fff4df;color:#8a5600}.status.cancel{background:#fff0ef;color:var(--red)}.empty{padding:24px 12px;text-align:center;color:var(--muted);border:1px dashed #d7dce8;border-radius:12px}.notice{padding:12px 14px;border-radius:12px;background:#eef2ff;color:#3730a3;font-size:13px;margin-top:16px}.footer{margin:20px 0 34px;text-align:center;color:var(--muted);font-size:12px}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#172033;color:white;padding:11px 16px;border-radius:12px;z-index:5;box-shadow:0 8px 30px #0002}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.hero button{width:100%}}
+@media(max-width:440px){main{padding:0 12px;margin-top:20px}.grid{gap:9px}.card{padding:14px}.metric{font-size:23px}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}header{padding:12px}.tag{display:none}.item{padding:10px}}
+</style>
+</head>
+<body>
+<header><div class="brand">Zakázky<span> jednoduše</span></div><div class="tag">MVP · demo verze</div></header>
+<main>
+  <section class="hero">
+    <div><h1>Měj svoje zakázky pod kontrolou.</h1><p>Zákazníci, práce a příjmy na jednom místě.</p></div>
+    <button id="newJobTop">＋ Přidat zakázku</button>
+  </section>
+  <section class="grid">
+    <div class="card"><div class="metric-label">Celkové příjmy zakázek</div><div class="metric" id="revenue">0 Kč</div><div class="metric-note">Ze zadaných zakázek</div></div>
+    <div class="card"><div class="metric-label">Neuhrazeno</div><div class="metric" id="unpaid">0 Kč</div><div class="metric-note">Zakázky čekající na úhradu</div></div>
+    <div class="card"><div class="metric-label">Aktivní zakázky</div><div class="metric" id="active">0</div><div class="metric-note">Rozpracované nebo nové</div></div>
+    <div class="card"><div class="metric-label">Zákazníci</div><div class="metric" id="customerCount">0</div><div class="metric-note">Ve tvém seznamu</div></div>
+  </section>
+  <nav class="tabs" aria-label="Sekce">
+    <button class="active" data-tab="dashboard">Přehled</button><button data-tab="jobs">Zakázky</button><button data-tab="customers">Zákazníci</button>
+  </nav>
+  <section id="dashboard" class="tabpane">
+    <div class="layout">
+      <div class="card"><div class="section-head"><h2>Poslední zakázky</h2><button class="secondary small" data-goto="jobs">Všechny zakázky</button></div><div class="list" id="recentJobs"></div></div>
+      <div class="card"><div class="section-head"><h2>Rychlá akce</h2></div><p class="muted">Zapiš novou práci, ať máš cenu i stav na jednom místě.</p><button id="newJobSide" style="width:100%">＋ Nová zakázka</button><div style="height:10px"></div><button id="newCustomerSide" class="secondary" style="width:100%">＋ Přidat zákazníka</button><div class="notice">Tip: začni zadáním zákazníka a potom k němu přidej zakázku.</div></div>
+    </div>
+  </section>
+  <section id="jobs" class="tabpane hidden">
+    <div class="card"><div class="section-head"><h2>Všechny zakázky</h2><button id="newJob">＋ Přidat zakázku</button></div><div class="field"><input id="jobSearch" placeholder="Hledat zakázku nebo zákazníka…"></div><div class="list" id="allJobs"></div></div>
+  </section>
+  <section id="customers" class="tabpane hidden">
+    <div class="layout">
+      <div class="card"><div class="section-head"><h2>Zákazníci</h2></div><div class="field"><input id="customerSearch" placeholder="Hledat zákazníka…"></div><div class="list" id="allCustomers"></div></div>
+      <div class="card"><div class="section-head"><h2 id="customerFormTitle">Přidat zákazníka</h2></div>
+        <form id="customerForm"><input type="hidden" id="customerId"><div class="field"><label for="customerName">Jméno / firma *</label><input id="customerName" required placeholder="Např. Jan Novák"></div><div class="field"><label for="customerPhone">Telefon</label><input id="customerPhone" type="tel" placeholder="+420…"></div><div class="field"><label for="customerEmail">E-mail</label><input id="customerEmail" type="email" placeholder="jan@example.cz"></div><div class="field"><label for="customerNotes">Poznámka</label><textarea id="customerNotes" placeholder="Adresa, preference…"></textarea></div><div class="actions"><button type="submit">Uložit zákazníka</button><button type="button" class="secondary" id="cancelCustomer">Vyčistit</button></div></form>
+      </div>
+    </div>
+  </section>
+  <section id="jobEditor" class="card hidden" style="margin-top:16px">
+    <div class="section-head"><h2 id="jobFormTitle">Nová zakázka</h2><button id="closeJob" class="secondary small">Zavřít</button></div>
+    <form id="jobForm"><input type="hidden" id="jobId"><div class="form-grid">
+      <div class="field"><label for="jobName">Název zakázky *</label><input id="jobName" required placeholder="Např. Oprava pračky"></div>
+      <div class="field"><label for="jobCustomer">Zákazník</label><select id="jobCustomer"><option value="">Bez přiřazení</option></select></div>
+      <div class="field"><label for="jobPrice">Cena v Kč *</label><input id="jobPrice" type="number" min="0" step="1" required placeholder="1500"></div>
+      <div class="field"><label for="jobStatus">Stav</label><select id="jobStatus"><option value="Nová">Nová</option><option value="Rozpracovaná">Rozpracovaná</option><option value="Hotová">Hotová</option><option value="Uhrazená">Uhrazená</option><option value="Zrušená">Zrušená</option></select></div>
+      <div class="field"><label for="jobDate">Datum</label><input id="jobDate" type="date"></div>
+      <div class="field full"><label for="jobNotes">Poznámka</label><textarea id="jobNotes" placeholder="Co je potřeba udělat…"></textarea></div>
+    </div><div class="actions"><button type="submit">Uložit zakázku</button><button type="button" class="secondary" id="cancelJob">Zrušit</button></div></form>
+  </section>
+  <div class="footer">Demo MVP · Data se ukládají pouze v tomto prohlížeči. Zatím nejde o účetní ani fakturační systém.</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat('cs-CZ',{style:'currency',currency:'CZK',maximumFractionDigits:0}).format(Number(n)||0);
+const today=()=>new Date().toISOString().slice(0,10);
+let customers=JSON.parse(localStorage.getItem('zd_customers')||'[]');
+let jobs=JSON.parse(localStorage.getItem('zd_jobs')||'[]');
+function save(){localStorage.setItem('zd_customers',JSON.stringify(customers));localStorage.setItem('zd_jobs',JSON.stringify(jobs));render()}
+function toast(msg){let el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.append(el);setTimeout(()=>el.remove(),2200)}
+function customerName(id){return customers.find(c=>c.id===id)?.name||'Bez zákazníka'}
+function statusClass(s){return s==='Uhrazená'?'':s==='Zrušená'?'cancel':s==='Hotová'?'':'open'}
+function jobMarkup(j){return `<div class="item"><div style="min-width:0"><strong>${esc(j.name)}</strong><small>${esc(customerName(j.customerId))} · ${esc(j.date||'Bez data')}</small><span class="status ${statusClass(j.status)}">${esc(j.status)}</span><div class="actions" style="margin-top:8px"><button class="secondary small" data-edit-job="${j.id}">Upravit</button><button class="danger small" data-delete-job="${j.id}">Smazat</button></div></div><div class="amount">${money(j.price)}</div></div>`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ $('revenue').textContent=money(jobs.filter(j=>j.status!=='Zrušená').reduce((s,j)=>s+Number(j.price||0),0));
+ $('unpaid').textContent=money(jobs.filter(j=>!['Uhrazená','Zrušená'].includes(j.status)).reduce((s,j)=>s+Number(j.price||0),0));
+ $('active').textContent=jobs.filter(j=>['Nová','Rozpracovaná'].includes(j.status)).length;
+ $('customerCount').textContent=customers.length;
+ $('recentJobs').innerHTML=jobs.length?jobs.slice().sort((a,b)=>(b.created||'').localeCompare(a.created||'')).slice(0,4).map(jobMarkup).join(''):'<div class="empty">Zatím tu nejsou žádné zakázky.<br>Přidej první a začni evidovat práci.</div>';
+ const q=($('jobSearch')?.value||'').toLowerCase();
+ const filtered=jobs.filter(j=>(j.name+' '+customerName(j.customerId)).toLowerCase().includes(q)).sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+ $('allJobs').innerHTML=filtered.length?filtered.map(jobMarkup).join(''):'<div class="empty">Žádné zakázky k zobrazení.</div>';
+ const cq=($('customerSearch')?.value||'').toLowerCase();
+ const fc=customers.filter(c=>(c.name+' '+c.phone+' '+c.email).toLowerCase().includes(cq));
+ $('allCustomers').innerHTML=fc.length?fc.map(c=>`<div class="item"><div><strong>${esc(c.name)}</strong><small>${esc(c.phone||'Bez telefonu')}${c.email?' · '+esc(c.email):''}</small>${c.notes?`<small>${esc(c.notes)}</small>`:''}<div class="actions" style="margin-top:8px"><button class="secondary small" data-edit-customer="${c.id}">Upravit</button><button class="danger small" data-delete-customer="${c.id}">Smazat</button></div></div><div class="amount">${jobs.filter(j=>j.customerId===c.id).length} zak.</div></div>`).join(''):'<div class="empty">Zatím tu nejsou zákazníci.</div>';
+ $('jobCustomer').innerHTML='<option value="">Bez přiřazení</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+}
+function showTab(tab){document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hidden'));$(tab).classList.remove('hidden');document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$('jobEditor').classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>showTab(b.dataset.goto));
+function openJob(id=null){$('jobForm').reset();$('jobId').value='';$('jobDate').value=today();$('jobFormTitle').textContent=id?'Upravit zakázku':'Nová zakázka';if(id){let j=jobs.find(x=>x.id===id);if(!j)return;$('jobId').value=j.id;$('jobName').value=j.name;$('jobCustomer').value=j.customerId||'';$('jobPrice').value=j.price;$('jobStatus').value=j.status;$('jobDate').value=j.date||today();$('jobNotes').value=j.notes||''}render();$('jobEditor').classList.remove('hidden');$('jobEditor').scrollIntoView({behavior:'smooth',block:'start'})}
+['newJobTop','newJob','newJobSide'].forEach(id=>$(id).onclick=()=>openJob());
+$('closeJob').onclick=$('cancelJob').onclick=()=>$('jobEditor').classList.add('hidden');
+$('jobForm').onsubmit=e=>{e.preventDefault();let id=$('jobId').value||crypto.randomUUID();let old=jobs.find(j=>j.id===id);let j={id,name:$('jobName').value.trim(),customerId:$('jobCustomer').value,price:Number($('jobPrice').value),status:$('jobStatus').value,date:$('jobDate').value,notes:$('jobNotes').value.trim(),created:old?.created||new Date().toISOString()};jobs=old?jobs.map(x=>x.id===id?j:x):[j,...jobs];save();$('jobEditor').classList.add('hidden');toast(old?'Zakázka upravena':'Zakázka uložena')};
+$('jobSearch').oninput=render;$('customerSearch').oninput=render;
+function resetCustomer(){$('customerForm').reset();$('customerId').value='';$('customerFormTitle').textContent='Přidat zákazníka'}
+$('cancelCustomer').onclick=resetCustomer;$('newCustomerSide').onclick=()=>{showTab('customers');resetCustomer();$('customerName').focus()};
+$('customerForm').onsubmit=e=>{e.preventDefault();let id=$('customerId').value||crypto.randomUUID();let c={id,name:$('customerName').value.trim(),phone:$('customerPhone').value.trim(),email:$('customerEmail').value.trim(),notes:$('customerNotes').value.trim()};customers=customers.some(x=>x.id===id)?customers.map(x=>x.id===id?c:x):[c,...customers];save();resetCustomer();toast('Zákazník uložen')};
+document.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;
+ if(b.dataset.editJob)openJob(b.dataset.editJob);
+ if(b.dataset.deleteJob&&confirm('Opravdu smazat tuto zakázku?')){jobs=jobs.filter(j=>j.id!==b.dataset.deleteJob);save();toast('Zakázka smazána')}
+ if(b.dataset.editCustomer){let c=customers.find(x=>x.id===b.dataset.editCustomer);if(c){showTab('customers');$('customerId').value=c.id;$('customerName').value=c.name;$('customerPhone').value=c.phone;$('customerEmail').value=c.email;$('customerNotes').value=c.notes;$('customerFormTitle').textContent='Upravit zákazníka';$('customerName').focus()}}
+ if(b.dataset.deleteCustomer){let id=b.dataset.deleteCustomer;if(jobs.some(j=>j.customerId===id)){if(!confirm('Tento zákazník má přiřazené zakázky. Smazat zákazníka a odebrat přiřazení?'))return;jobs=jobs.map(j=>j.customerId===id?{...j,customerId:''}:j)}if(confirm('Opravdu smazat zákazníka?')){customers=customers.filter(c=>c.id!==id);save();toast('Zákazník smazán')}}
+});
+render();
+</script>
+</body>
+</html>
